@@ -9,6 +9,8 @@ const errorMiddleware = require('./middlewares/error.middleware');
 const sprintsRoutes = require('./routes/sprints.routes');
 const tareasRoutes = require('./routes/tareas.routes');
 const evaluacionesRoutes = require('./routes/evaluaciones.routes');
+const gruposRoutes = require('./routes/grupos.routes');
+const reportesRoutes = require('./routes/reportes.routes');
 
 const app = express();
 
@@ -29,6 +31,8 @@ app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/sprints', sprintsRoutes);
 app.use('/api/tareas', tareasRoutes);
 app.use('/api/evaluaciones', evaluacionesRoutes);
+app.use('/api/grupos', gruposRoutes);
+app.use('/api/reportes', reportesRoutes);
 
 app.use(errorMiddleware);
 

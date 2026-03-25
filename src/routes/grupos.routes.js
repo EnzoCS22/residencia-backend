@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const usuariosController = require('../controllers/usuarios.controller');
+const gruposController = require('../controllers/grupos.controller');
 const {
   authenticateToken,
   authorizeRoles
@@ -11,35 +11,32 @@ router.post(
   '/',
   authenticateToken,
   authorizeRoles('admin'),
-  usuariosController.createUsuario
+  gruposController.createGrupo
 );
 
 router.get(
   '/',
   authenticateToken,
-  authorizeRoles('admin'),
-  usuariosController.getUsuarios
+  gruposController.getGrupos
 );
 
 router.get(
   '/:id',
   authenticateToken,
-  authorizeRoles('admin'),
-  usuariosController.getUsuarioById
+  gruposController.getGrupoById
 );
 
 router.patch(
-  '/:id',
+  '/:id/asignar-lider',
   authenticateToken,
   authorizeRoles('admin'),
-  usuariosController.updateUsuario
+  gruposController.asignarLider
 );
 
-router.patch(
-  '/:id/desactivar',
+router.get(
+  '/:id/miembros',
   authenticateToken,
-  authorizeRoles('admin'),
-  usuariosController.desactivarUsuario
+  gruposController.getMiembrosByGrupo
 );
 
 module.exports = router;

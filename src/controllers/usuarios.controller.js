@@ -10,6 +10,15 @@ const createUsuarioSchema = Joi.object({
   id_grupo: Joi.number().integer().allow(null).optional()
 });
 
+const updateUsuarioSchema = Joi.object({
+  nombre: Joi.string().max(120).optional(),
+  correo: Joi.string().email().max(160).optional(),
+  password: Joi.string().min(6).optional(),
+  rol: Joi.string().valid('admin', 'lider', 'empleado').optional(),
+  activo: Joi.boolean().optional(),
+  id_grupo: Joi.number().integer().allow(null).optional()
+}).min(1);
+
 async function createUsuario(req, res, next) {
   try {
     const { error, value } = createUsuarioSchema.validate(req.body);
@@ -46,7 +55,60 @@ async function getUsuarios(req, res, next) {
   }
 }
 
+async function getUsuarioById(req, res, next) {
+  try {
+    const usuario = await usuariosService.getUsuarioById(req.params.id);
+
+    res.status(200).json({
+      ok: true,
+      data: usuario
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function updateUsuario(req, res, next) {
+  try {
+    const { error, value } = updateUsuarioSchema.validate(req.body);
+
+    if (error) {
+      return res.status(400).json({
+        ok: false,
+        message: error.details[0].message
+      });
+    }
+
+    const usuario = await usuariosService.updateUsuario(req.params.id, value);
+
+    res.status(200).json({
+      ok: true,
+      message: 'Usuario actualizado correctamente',
+      data: usuario
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function desactivarUsuario(req, res, next) {
+  try {
+    const usuario = await usuariosService.desactivarUsuario(req.params.id);
+
+    res.status(200).json({
+      ok: true,
+      message: 'Usuario desactivado correctamente',
+      data: usuario
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   createUsuario,
-  getUsuarios
+  getUsuarios,
+  getUsuarioById,
+  updateUsuario,
+  desactivarUsuario
 };
