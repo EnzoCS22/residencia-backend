@@ -182,10 +182,69 @@ async function desactivarUsuario(id) {
   return result.rows[0];
 }
 
+async function updateUsuarioRol(id, data) {
+  const { rol, id_grupo } = data;
+
+  const usuarioResult = await pool.query(
+    `
+    SELECT id_usuario, nombre, correo, rol, activo, fecha_registro, id_grupo
+    FROM usuarios
+    WHERE id_usuario = $1
+    LIMIT 1
+    `,
+    [id]
+  );
+
+  if (usuarioResult.rows.length === 0) {
+    const error = new Error('Usuario no encontrado');
+    error.status = 404;
+    throw error;
+  }
+
+  if (rol === 'admin' && id_grupo !== null && id_grupo !== undefined) {
+    const error = new Error('Un administrador no debe pertenecer a un grupo');
+    error.status = 400;
+    throw error;
+  }
+
+  if (id_grupo !== null && id_grupo !== undefined) {
+    const grupoResult = await pool.query(
+      `
+      SELECT id_grupo
+      FROM grupos
+      WHERE id_grupo = $1
+      LIMIT 1
+      `,
+      [id_grupo]
+    );
+
+    if (grupoResult.rows.length === 0) {
+      const error = new Error('El grupo indicado no existe');
+      error.status = 404;
+      throw error;
+    }
+  }
+
+  const result = await pool.query(
+    `
+    UPDATE usuarios
+    SET
+      rol = $1,
+      id_grupo = $2
+    WHERE id_usuario = $3
+    RETURNING id_usuario, nombre, correo, rol, activo, fecha_registro, id_grupo
+    `,
+    [rol, id_grupo ?? null, id]
+  );
+
+  return result.rows[0];
+}
+
 module.exports = {
   createUsuario,
   getUsuarios,
   getUsuarioById,
   updateUsuario,
-  desactivarUsuario
+  desactivarUsuario,
+  updateUsuarioRol
 };

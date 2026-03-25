@@ -33,6 +33,13 @@ router.patch(
   gruposController.asignarLider
 );
 
+router.patch(
+  '/:id/miembros',
+  authenticateToken,
+  authorizeRoles('admin'),
+  gruposController.asignarMiembros
+);
+
 router.get(
   '/:id/miembros',
   authenticateToken,

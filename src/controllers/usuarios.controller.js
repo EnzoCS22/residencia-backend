@@ -19,6 +19,11 @@ const updateUsuarioSchema = Joi.object({
   id_grupo: Joi.number().integer().allow(null).optional()
 }).min(1);
 
+const updateUsuarioRolSchema = Joi.object({
+  rol: Joi.string().valid('admin', 'lider', 'empleado').required(),
+  id_grupo: Joi.number().integer().allow(null).optional()
+});
+
 async function createUsuario(req, res, next) {
   try {
     const { error, value } = createUsuarioSchema.validate(req.body);
@@ -105,10 +110,34 @@ async function desactivarUsuario(req, res, next) {
   }
 }
 
+async function updateUsuarioRol(req, res, next) {
+  try {
+    const { error, value } = updateUsuarioRolSchema.validate(req.body);
+
+    if (error) {
+      return res.status(400).json({
+        ok: false,
+        message: error.details[0].message
+      });
+    }
+
+    const usuario = await usuariosService.updateUsuarioRol(req.params.id, value);
+
+    res.status(200).json({
+      ok: true,
+      message: 'Rol de usuario actualizado correctamente',
+      data: usuario
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   createUsuario,
   getUsuarios,
   getUsuarioById,
   updateUsuario,
-  desactivarUsuario
+  desactivarUsuario,
+  updateUsuarioRol
 };

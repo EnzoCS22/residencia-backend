@@ -93,12 +93,45 @@ async function getMiembrosByGrupo(req, res, next) {
   } catch (error) {
     next(error);
   }
+
+  const asignarMiembrosSchema = Joi.object({
+  memberIds: Joi.array()
+    .items(Joi.number().integer().positive())
+    .required()
+  });
 }
+
+async function asignarMiembros(req, res, next) {
+  try {
+    const { error, value } = asignarMiembrosSchema.validate(req.body);
+
+    if (error) {
+      return res.status(400).json({
+        ok: false,
+        message: error.details[0].message
+      });
+    }
+
+    const data = await gruposService.asignarMiembros(
+      req.params.id,
+      value.memberIds
+    );
+
+    res.status(200).json({
+      ok: true,
+      message: 'Miembros actualizados correctamente',
+      data
+    });
+  } catch (error) {
+    next(error);
+  }
+  }
 
 module.exports = {
   createGrupo,
   getGrupos,
   getGrupoById,
   asignarLider,
-  getMiembrosByGrupo
+  getMiembrosByGrupo,
+  asignarMiembros
 };

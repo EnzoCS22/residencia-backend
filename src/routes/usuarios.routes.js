@@ -42,4 +42,11 @@ router.patch(
   usuariosController.desactivarUsuario
 );
 
+router.patch(
+  '/:id/rol',
+  authenticateToken,
+  authorizeRoles('admin'),
+  usuariosController.updateUsuarioRol
+);
+
 module.exports = router;

@@ -158,10 +158,117 @@ async function getMiembrosByGrupo(id_grupo) {
   };
 }
 
+async function asignarMiembros(id_grupo, memberIds) {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const grupoResult = await client.query(
+      `
+      SELECT id_grupo
+      FROM grupos
+      WHERE id_grupo = $1
+      LIMIT 1
+      `,
+      [id_grupo]
+    );
+
+    if (grupoResult.rows.length === 0) {
+      const error = new Error('Grupo no encontrado');
+      error.status = 404;
+      throw error;
+    }
+
+    if (!Array.isArray(memberIds)) {
+      const error = new Error('memberIds debe ser un arreglo');
+      error.status = 400;
+      throw error;
+    }
+
+    if (memberIds.length > 0) {
+      const usuariosResult = await client.query(
+        `
+        SELECT id_usuario, rol
+        FROM usuarios
+        WHERE id_usuario = ANY($1::bigint[])
+        `,
+        [memberIds]
+      );
+
+      if (usuariosResult.rows.length !== memberIds.length) {
+        const error = new Error('Uno o más usuarios no existen');
+        error.status = 404;
+        throw error;
+      }
+
+      const usuariosInvalidos = usuariosResult.rows.filter(
+        (u) => u.rol === 'admin'
+      );
+
+      if (usuariosInvalidos.length > 0) {
+        const error = new Error('No se puede asignar administradores a un grupo');
+        error.status = 400;
+        throw error;
+      }
+    }
+
+    await client.query(
+      `
+      UPDATE usuarios
+      SET id_grupo = NULL
+      WHERE id_grupo = $1
+        AND rol IN ('lider', 'empleado')
+      `,
+      [id_grupo]
+    );
+
+    if (memberIds.length > 0) {
+      await client.query(
+        `
+        UPDATE usuarios
+        SET id_grupo = $1
+        WHERE id_usuario = ANY($2::bigint[])
+        `,
+        [id_grupo, memberIds]
+      );
+    }
+
+    const miembrosResult = await client.query(
+      `
+      SELECT
+        id_usuario,
+        nombre,
+        correo,
+        rol,
+        activo,
+        id_grupo
+      FROM usuarios
+      WHERE id_grupo = $1
+      ORDER BY id_usuario ASC
+      `,
+      [id_grupo]
+    );
+
+    await client.query('COMMIT');
+
+    return {
+      id_grupo: Number(id_grupo),
+      miembros: miembrosResult.rows
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+  }
+
 module.exports = {
   createGrupo,
   getGrupos,
   getGrupoById,
   asignarLider,
-  getMiembrosByGrupo
+  getMiembrosByGrupo,
+  asignarMiembros
 };
