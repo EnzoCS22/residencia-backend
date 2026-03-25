@@ -10,6 +10,12 @@ const asignarLiderSchema = Joi.object({
   id_lider: Joi.number().integer().required()
 });
 
+const asignarMiembrosSchema = Joi.object({
+  memberIds: Joi.array()
+    .items(Joi.number().integer().positive())
+    .required()
+});
+
 async function createGrupo(req, res, next) {
   try {
     const { error, value } = createGrupoSchema.validate(req.body);
@@ -93,12 +99,6 @@ async function getMiembrosByGrupo(req, res, next) {
   } catch (error) {
     next(error);
   }
-
-  const asignarMiembrosSchema = Joi.object({
-  memberIds: Joi.array()
-    .items(Joi.number().integer().positive())
-    .required()
-  });
 }
 
 async function asignarMiembros(req, res, next) {
@@ -125,7 +125,7 @@ async function asignarMiembros(req, res, next) {
   } catch (error) {
     next(error);
   }
-  }
+}
 
 module.exports = {
   createGrupo,
