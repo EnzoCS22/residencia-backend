@@ -103,10 +103,30 @@ async function calcularEvaluacion(req, res, next) {
   }
 }
 
+async function getEvaluacionesBySprintForLeader(req, res, next) {
+  try {
+    const { id_sprint } = req.params;
+    const id_lider = req.user.id_usuario;
+
+    const data = await evaluacionesService.getEvaluacionesBySprintForLeader(
+      id_sprint,
+      id_lider
+    );
+
+    res.status(200).json({
+      ok: true,
+      data
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   createEvaluacion,
   getEvaluaciones,
   getEvaluacionesByEmpleado,
   getEvaluacionesBySprint,
-  calcularEvaluacion
+  calcularEvaluacion,
+  getEvaluacionesBySprintForLeader
 };

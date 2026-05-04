@@ -7,6 +7,13 @@ const createSprintSchema = Joi.object({
   fecha_fin: Joi.date().required()
 });
 
+const updateSprintSchema = Joi.object({
+  nombre_sprint: Joi.string().max(140).optional(),
+  fecha_inicio: Joi.date().optional(),
+  fecha_fin: Joi.date().optional(),
+  estado: Joi.string().valid('activo', 'cerrado').optional()
+}).min(1);
+
 async function createSprint(req, res, next) {
   try {
     const { error, value } = createSprintSchema.validate(req.body);
@@ -70,9 +77,33 @@ async function closeSprint(req, res, next) {
   }
 }
 
+async function updateSprint(req, res, next) {
+  try {
+    const { error, value } = updateSprintSchema.validate(req.body);
+
+    if (error) {
+      return res.status(400).json({
+        ok: false,
+        message: error.details[0].message
+      });
+    }
+
+    const sprint = await sprintsService.updateSprint(req.params.id, value);
+
+    res.status(200).json({
+      ok: true,
+      message: 'Sprint actualizado correctamente',
+      data: sprint
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   createSprint,
   getSprints,
   getSprintById,
-  closeSprint
+  closeSprint,
+  updateSprint
 };

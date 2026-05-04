@@ -1,24 +1,24 @@
 const express = require('express');
 const router = express.Router();
 
-const evaluacionRevisionController = require('../controllers/evaluacionRevision.controller');
+const evaluacionesRevisionController = require('../controllers/evaluacionesRevision.controller');
 const {
   authenticateToken,
-  authorizeRoles
+  authorizeRoles,
 } = require('../middlewares/auth.middleware');
 
 router.get(
   '/:id_empleado/:id_sprint',
   authenticateToken,
   authorizeRoles('admin', 'lider'),
-  evaluacionRevisionController.getRevisionByEmpleadoSprint
+  evaluacionesRevisionController.getRevisionByEmpleadoSprint
 );
 
 router.post(
   '/',
   authenticateToken,
   authorizeRoles('admin', 'lider'),
-  evaluacionRevisionController.saveRevision
+  evaluacionesRevisionController.saveRevision
 );
 
 module.exports = router;

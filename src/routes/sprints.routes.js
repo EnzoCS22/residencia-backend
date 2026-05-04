@@ -33,4 +33,11 @@ router.patch(
   sprintsController.closeSprint
 );
 
+router.patch(
+  '/:id',
+  authenticateToken,
+  authorizeRoles('admin', 'lider'),
+  sprintsController.updateSprint
+);
+
 module.exports = router;

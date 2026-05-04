@@ -14,7 +14,8 @@ const reportesRoutes = require('./routes/reportes.routes');
 const miDesempenoRoutes = require('./routes/miDesempeno.routes');
 const reportesDetalladoRoutes = require('./routes/reportesDetallado.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
-const evaluacionRevisionRoutes = require('./routes/evaluacionRevision.routes');
+const evaluacionesRevisionRoutes = require('./routes/evaluacionesRevision.routes');
+const miDesempenoSprintRoutes = require('./routes/miDesempenoSprint.routes');
 
 const app = express();
 
@@ -40,7 +41,8 @@ app.use('/api/reportes', reportesRoutes);
 app.use('/api/mi-desempeno', miDesempenoRoutes);
 app.use('/api/reportes-detallado', reportesDetalladoRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/evaluacion-revision', evaluacionRevisionRoutes);
+app.use('/api/evaluaciones/revision', evaluacionesRevisionRoutes);
+app.use('/api/mi-desempeno', miDesempenoSprintRoutes);
 
 app.use(errorMiddleware);
 
