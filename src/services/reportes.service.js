@@ -47,7 +47,7 @@ async function getReporteGeneral() {
     totalTareas,
     tareasPorEstatus,
     totalEvaluaciones,
-    promedioCumplimiento
+    promedioCumplimiento,
   ] = await Promise.all([
     pool.query(totalUsuariosQuery),
     pool.query(usuariosActivosQuery),
@@ -55,7 +55,7 @@ async function getReporteGeneral() {
     pool.query(totalTareasQuery),
     pool.query(tareasPorEstatusQuery),
     pool.query(totalEvaluacionesQuery),
-    pool.query(promedioCumplimientoQuery)
+    pool.query(promedioCumplimientoQuery),
   ]);
 
   return {
@@ -65,7 +65,7 @@ async function getReporteGeneral() {
     total_tareas: totalTareas.rows[0].total_tareas,
     tareas_por_estatus: tareasPorEstatus.rows[0],
     total_evaluaciones: totalEvaluaciones.rows[0].total_evaluaciones,
-    promedio_cumplimiento: promedioCumplimiento.rows[0].promedio_cumplimiento
+    promedio_cumplimiento: promedioCumplimiento.rows[0].promedio_cumplimiento,
   };
 }
 
@@ -118,27 +118,31 @@ async function getReporteSprint(id_sprint) {
 
   const tareasResult = await pool.query(resumenTareasQuery, [id_sprint]);
   const promedioResult = await pool.query(promedioSprintQuery, [id_sprint]);
-  const evaluacionesResult = await pool.query(evaluacionesDetalleQuery, [id_sprint]);
+  const evaluacionesResult = await pool.query(evaluacionesDetalleQuery, [
+    id_sprint,
+  ]);
 
   return {
     sprint: sprintResult.rows[0],
     resumen_tareas: tareasResult.rows[0],
     promedio_cumplimiento: promedioResult.rows[0].promedio_cumplimiento,
-    evaluaciones: evaluacionesResult.rows
+    evaluaciones: evaluacionesResult.rows,
   };
 }
 
 async function getReporteEmpleado(id_empleado) {
   const empleadoQuery = `
     SELECT
-      id_usuario,
-      nombre,
-      correo,
-      rol,
-      activo,
-      id_grupo
-    FROM usuarios
-    WHERE id_usuario = $1
+      u.id_usuario,
+      u.nombre,
+      u.correo,
+      u.rol,
+      u.activo,
+      u.id_grupo,
+      g.nombre_grupo
+    FROM usuarios u
+    LEFT JOIN grupos g ON g.id_grupo = u.id_grupo
+    WHERE u.id_usuario = $1
     LIMIT 1
   `;
 
@@ -152,10 +156,21 @@ async function getReporteEmpleado(id_empleado) {
 
   const resumenTareasQuery = `
     SELECT
+      COUNT(DISTINCT id_sprint)::int AS total_sprints,
       COUNT(*)::int AS total_tareas,
       COUNT(*) FILTER (WHERE estatus = 'pendiente')::int AS pendientes,
       COUNT(*) FILTER (WHERE estatus = 'en_progreso')::int AS en_progreso,
-      COUNT(*) FILTER (WHERE estatus = 'hecha')::int AS hechas
+      COUNT(*) FILTER (WHERE estatus = 'hecha')::int AS hechas,
+      COALESCE(
+        ROUND(
+          (
+            COUNT(*) FILTER (WHERE estatus = 'hecha')::numeric
+            / NULLIF(COUNT(*), 0)
+          ) * 100,
+          2
+        ),
+        0
+      ) AS cumplimiento_tareas
     FROM tareas
     WHERE id_empleado = $1
   `;
@@ -182,20 +197,62 @@ async function getReporteEmpleado(id_empleado) {
     ORDER BY e.fecha_evaluacion DESC
   `;
 
-  const tareasResult = await pool.query(resumenTareasQuery, [id_empleado]);
-  const promedioResult = await pool.query(promedioEmpleadoQuery, [id_empleado]);
-  const historialResult = await pool.query(historialEvaluacionesQuery, [id_empleado]);
+  const sprintsAsignadosQuery = `
+    SELECT
+      s.id_sprint,
+      s.nombre_sprint,
+      s.fecha_inicio,
+      s.fecha_fin,
+      s.estado,
+      COUNT(t.id_tarea)::int AS total_tareas,
+      COUNT(t.id_tarea) FILTER (WHERE t.estatus = 'pendiente')::int AS pendientes,
+      COUNT(t.id_tarea) FILTER (WHERE t.estatus = 'en_progreso')::int AS en_progreso,
+      COUNT(t.id_tarea) FILTER (WHERE t.estatus = 'hecha')::int AS hechas,
+      COALESCE(
+        ROUND(
+          (
+            COUNT(t.id_tarea) FILTER (WHERE t.estatus = 'hecha')::numeric
+            / NULLIF(COUNT(t.id_tarea), 0)
+          ) * 100,
+          2
+        ),
+        0
+      ) AS cumplimiento_tareas
+    FROM tareas t
+    INNER JOIN sprints s ON s.id_sprint = t.id_sprint
+    WHERE t.id_empleado = $1
+    GROUP BY
+      s.id_sprint,
+      s.nombre_sprint,
+      s.fecha_inicio,
+      s.fecha_fin,
+      s.estado
+    ORDER BY s.fecha_inicio DESC, s.id_sprint DESC
+  `;
+
+  const [
+    tareasResult,
+    promedioResult,
+    historialResult,
+    sprintsAsignadosResult,
+  ] = await Promise.all([
+    pool.query(resumenTareasQuery, [id_empleado]),
+    pool.query(promedioEmpleadoQuery, [id_empleado]),
+    pool.query(historialEvaluacionesQuery, [id_empleado]),
+    pool.query(sprintsAsignadosQuery, [id_empleado]),
+  ]);
 
   return {
     empleado: empleadoResult.rows[0],
     resumen_tareas: tareasResult.rows[0],
     promedio_cumplimiento: promedioResult.rows[0].promedio_cumplimiento,
-    historial_evaluaciones: historialResult.rows
+    sprints_asignados: sprintsAsignadosResult.rows,
+    historial_evaluaciones: historialResult.rows,
   };
 }
 
 module.exports = {
   getReporteGeneral,
   getReporteSprint,
-  getReporteEmpleado
+  getReporteEmpleado,
 };
